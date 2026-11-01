@@ -8,7 +8,7 @@ import type { HttpServer, WebServerHandler, WebSocketControllerHandler } from "@
 
 /**
  * Health check endpoint that returns server status.
- * Responds to GET /health with HTTP 200 and JSON body containing version and node count.
+ * Responds to GET and HEAD /health with HTTP 200 and JSON body containing version and node count.
  */
 export class HealthHandler implements WebServerHandler {
     #wsHandler: WebSocketControllerHandler;
@@ -19,8 +19,9 @@ export class HealthHandler implements WebServerHandler {
 
     async register(server: HttpServer): Promise<void> {
         server.on("request", (req, res) => {
-            if (req.url === "/health") {
-                if (req.method === "GET") {
+            // The query is ignored here as in StaticFileHandler, which reserves "/health" and never answers it.
+            if (req.url?.split("?")[0] === "/health") {
+                if (req.method === "GET" || req.method === "HEAD") {
                     try {
                         const healthData = this.#wsHandler.health();
                         res.writeHead(200, { "Content-Type": "application/json" });
@@ -30,7 +31,7 @@ export class HealthHandler implements WebServerHandler {
                         res.end(JSON.stringify({ error: "Health check failed" }));
                     }
                 } else {
-                    res.writeHead(405, { Allow: "GET" });
+                    res.writeHead(405, { Allow: "GET, HEAD" });
                     res.end();
                 }
             }
