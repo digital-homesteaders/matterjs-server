@@ -20,6 +20,7 @@ export class HealthHandler implements WebServerHandler {
     async register(server: HttpServer): Promise<void> {
         server.on("request", (req, res) => {
             if (req.url === "/health") {
+                (req as { _matterHandledRequest?: boolean })._matterHandledRequest = true;
                 if (req.method === "GET") {
                     try {
                         const healthData = this.#wsHandler.health();

@@ -63,6 +63,18 @@ export class WebServer {
                 });
             });
 
+            // Same contract for plain requests: a handler sets `req._matterHandledRequest = true` when it
+            // claims one, even if it answers asynchronously. Anything unclaimed gets a 404 instead of hanging.
+            server.on("request", (req, res) => {
+                setImmediate(() => {
+                    if ((req as { _matterHandledRequest?: boolean })._matterHandledRequest) return;
+                    if (res.headersSent || res.writableEnded) return;
+                    req.resume();
+                    res.writeHead(404, { "Content-Type": "text/plain" });
+                    res.end("Not Found");
+                });
+            });
+
             // Start listening to this address
             await this.#startServer(server, host);
         }

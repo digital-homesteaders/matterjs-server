@@ -50,6 +50,7 @@ export class OtaUploadHandler implements WebServerHandler {
             if (path === undefined || (path !== "/ota-upload" && !path.startsWith("/ota-upload/"))) {
                 return;
             }
+            (req as { _matterHandledRequest?: boolean })._matterHandledRequest = true;
 
             // The response is written after long awaits (streaming, import), by when the peer may be
             // gone; an unlistened 'error' on a stream is an uncaught exception.
