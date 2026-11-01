@@ -19,8 +19,8 @@ export class HealthHandler implements WebServerHandler {
 
     async register(server: HttpServer): Promise<void> {
         server.on("request", (req, res) => {
-            // The query is ignored here as in StaticFileHandler, which reserves "/health" and never answers it.
             if (req.url?.split("?")[0] === "/health") {
+                (req as { _matterHandledRequest?: boolean })._matterHandledRequest = true;
                 if (req.method === "GET" || req.method === "HEAD") {
                     try {
                         const healthData = this.#wsHandler.health();

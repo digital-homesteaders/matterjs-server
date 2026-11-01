@@ -52,6 +52,7 @@ export class StaticFileHandler implements WebServerHandler {
         server.on("request", (req, res) => {
             const path = req.url?.split("?")[0] ?? "";
             if (!this.#reservedPrefixes.some(prefix => path === prefix || path.startsWith(`${prefix}/`))) {
+                (req as { _matterHandledRequest?: boolean })._matterHandledRequest = true;
                 app(req, res);
             }
         });

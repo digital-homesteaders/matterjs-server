@@ -14,6 +14,7 @@ This page shows a detailed overview of the changes between versions without the 
 - Fix: Setting the fabric label to the value it already has, as Home Assistant does on every restart, no longer sends the label to every node again (#1226)
 - Fix: `--vendorid`/`VENDOR_ID` and `--fabricid`/`FABRIC_ID` accept `0x`-prefixed hex, as the Docker documentation shows the default, and reject reserved vendor IDs and values with trailing characters at startup instead of failing later with a misleading vendor ID 0 error
 - Fix: `/health` answers requests with a query string, which got no response at all before, and `HEAD` requests
+- Fix: HTTP requests that no handler answers, such as a plain `GET /ws`, `/health/` or any path with `--disable-dashboard`, get a 404 instead of no response at all
 
 ## 1.5.5 (2026-10-24)
 
