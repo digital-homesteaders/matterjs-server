@@ -10,7 +10,7 @@ import "./pre-init.js";
 // clusters fail once a cluster model is finalized
 import "@matter-server/custom-clusters";
 // Standard imports
-import { BleProxyHandler, ProxyBle } from "@matter-server/ble-proxy";
+import { BleProxyHandler, CombinedBle, ProxyBle } from "@matter-server/ble-proxy";
 import {
     ConfigStorage,
     Environment,
@@ -83,11 +83,13 @@ env.vars.set("runtime.signals", false);
 // Apply CLI options to environment variables
 env.vars.set("storage.path", cliOptions.storagePath);
 if (cliOptions.bleProxy) {
-    if (cliOptions.bluetoothAdapter !== null) {
-        logger.warn("--ble-proxy and --bluetooth-adapter are mutually exclusive. Using --ble-proxy.");
-    }
     env.vars.set("ble.enable", true);
-    logger.info("BLE proxy mode enabled");
+    if (cliOptions.bluetoothAdapter !== null) {
+        env.vars.set("ble.hci.id", cliOptions.bluetoothAdapter);
+        logger.info(`BLE proxy mode enabled together with the local adapter (hci-id=${cliOptions.bluetoothAdapter})`);
+    } else {
+        logger.info("BLE proxy mode enabled");
+    }
 } else if (cliOptions.bluetoothAdapter !== null) {
     env.vars.set("ble.enable", true);
     env.vars.set("ble.hci.id", cliOptions.bluetoothAdapter);
@@ -187,7 +189,8 @@ async function start() {
     let bleProxyHandler: BleProxyHandler | undefined;
     if (cliOptions.bleProxy) {
         bleProxyHandler = new BleProxyHandler();
-        env.set(Ble, new ProxyBle(bleProxyHandler, env));
+        const proxyBle = new ProxyBle(bleProxyHandler, env);
+        env.set(Ble, cliOptions.bluetoothAdapter !== null ? await CombinedBle.create(env, proxyBle) : proxyBle);
     }
 
     controller = await MatterController.create(

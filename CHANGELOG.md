@@ -16,6 +16,7 @@ This page shows a detailed overview of the changes between versions without the 
 - Fix: `/health` answers requests with a query string, which got no response at all before, and `HEAD` requests
 - Fix: HTTP requests that no handler answers, such as a plain `GET /ws`, `/health/` or any path with `--disable-dashboard`, get a 404 instead of no response at all
 - Fix: The event history in `diagnostics` holds each node event once, instead of once per listening client, and also records events while no client is listening
+- Feature: `--ble-proxy` and `--bluetooth-adapter` can be used together. Both scan for commissionable devices, and each device is connected through the side that discovered it, the local adapter when both did. Before, `--ble-proxy` silently disabled the local adapter
 
 ## 1.5.5 (2026-10-24)
 
