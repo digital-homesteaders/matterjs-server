@@ -1,0 +1,71 @@
+# Digital Homesteaders: builds the `local` integration branch (upstream main + our fix branches) into
+# ghcr.io/digital-homesteaders/matterjs-server. Lives only on `local`; never part of an upstream PR.
+name: Local image
+
+on:
+    push:
+        branches: [local]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    packages: write
+
+concurrency:
+    group: local-image
+    cancel-in-progress: true
+
+jobs:
+    image:
+        if: github.repository_owner == 'digital-homesteaders'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 24.x
+
+            - name: Version
+              id: version
+              run: |
+                  base=$(sed -E 's/-.*//' version.txt | tr -d '[:space:]')
+                  version="${base}-dh.${GITHUB_RUN_NUMBER}"
+                  echo "$version" > version.txt
+                  echo "version=$version" >> "$GITHUB_OUTPUT"
+
+            - run: npm ci
+            - run: npm run version -- --apply
+            - run: npm run build
+            - run: npm run format-verify
+            - run: npm run lint
+            - run: npm run test
+
+            - name: Pack npm packages
+              run: |
+                  mkdir -p npm-packages
+                  for pkg in $(npm query .workspace | jq -r '.[] | select(.private != true) | .name'); do
+                    npm pack --pack-destination npm-packages --workspace="$pkg" >/dev/null
+                  done
+                  ls -l npm-packages
+
+            - uses: docker/login-action@v4.7.0
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.repository_owner }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - uses: docker/setup-buildx-action@v4
+
+            - uses: docker/build-push-action@v7
+              with:
+                  context: ./docker/matterjs-server
+                  file: ./docker/matterjs-server/Dockerfile
+                  platforms: linux/amd64,linux/arm64
+                  build-contexts: npm-packages=./npm-packages
+                  build-args: |
+                      MATTERJS_SERVER_VERSION=${{ steps.version.outputs.version }}
+                  tags: |
+                      ghcr.io/${{ github.repository_owner }}/matterjs-server:local
+                      ghcr.io/${{ github.repository_owner }}/matterjs-server:${{ steps.version.outputs.version }}
+                  push: true
