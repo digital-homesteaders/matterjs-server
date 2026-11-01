@@ -12,6 +12,7 @@ This page shows a detailed overview of the changes between versions without the 
 - Fix: The dashboard reconnects once on its own when the connection drops, and shows the "Connection lost" page only when that attempt fails (#1213)
 - Fix: ws-client: `connect()` and `startListening()` fail when the server closes the connection before it is ready, instead of never returning
 - Fix: Setting the fabric label to the value it already has, as Home Assistant does on every restart, no longer sends the label to every node again (#1226)
+- Fix: The event history in `diagnostics` holds each node event once, instead of once per listening client, and also records events while no client is listening
 
 ## 1.5.5 (2026-10-24)
 

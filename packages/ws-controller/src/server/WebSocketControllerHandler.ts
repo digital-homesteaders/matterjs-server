@@ -282,6 +282,7 @@ export class WebSocketControllerHandler implements WebServerHandler {
     #removeUpgradeListeners: (() => void)[] = [];
     /** Circular buffer for recent node events (max 25) */
     #eventHistory: MatterNodeEvent[] = [];
+    #historyObservers = new ObserverGroup();
     /** Track when each node was last interviewed (connected) - keyed by nodeId */
     #lastInterviewDates = new Map<NodeId, Date>();
     /** Backpressure-managed send path per open connection; also the fan-out target for broadcasts. */
@@ -419,6 +420,20 @@ export class WebSocketControllerHandler implements WebServerHandler {
             // Connection + observer wiring below is shared state; only attach once across binds.
             return;
         }
+
+        // Recorded once per event, not per connection, and also while no client is listening.
+        this.#historyObservers.on(this.#commandHandler.events.eventChanged, (nodeId, { path, events }) => {
+            for (const event of events) {
+                try {
+                    this.#addEventToHistory(convertEventToWebSocket(nodeId, path, event));
+                } catch (err) {
+                    logger.error(
+                        `Failed to record event history for Node ${this.#commandHandler.formatNode(nodeId)}`,
+                        err,
+                    );
+                }
+            }
+        });
 
         wss.on("connection", (ws, req: { socket?: { remoteAddress?: string } }) => {
             if (this.#closed || this.#shuttingDown) {
@@ -578,9 +593,6 @@ export class WebSocketControllerHandler implements WebServerHandler {
                     // per event so one bad payload doesn't drop the rest of the batch.
                     try {
                         const nodeEvent = convertEventToWebSocket(nodeId, path, event);
-
-                        this.#addEventToHistory(nodeEvent);
-
                         logger.debug(
                             `[${connId}] Sending node_event for Node ${this.#commandHandler.formatNode(nodeId)}`,
                             nodeEvent,
@@ -878,6 +890,7 @@ export class WebSocketControllerHandler implements WebServerHandler {
         }
 
         this.#closed = true;
+        this.#historyObservers.close();
         for (const remove of this.#removeUpgradeListeners) remove();
         this.#removeUpgradeListeners = [];
         // Send server_shutdown event to all connected clients before closing
