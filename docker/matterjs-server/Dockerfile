@@ -80,6 +80,10 @@ RUN --mount=type=bind,from=npm-packages,target=/npm-packages \
     && mkdir /data \
     && chown 1000:1000 /data
 
+# Digital Homesteaders: noble's D-Bus backend crashes the server on a dropped bus connection
+RUN --mount=type=bind,source=patches,target=/patches \
+    node /patches/noble-dbus-bus-error.mjs node_modules/@stoprocent/noble/lib/dbus/bindings.js
+
 # Environment variables with defaults (all CLI options can be set via env vars)
 # See docs/docker.md for full list of available environment variables
 ENV LOG_LEVEL=info
