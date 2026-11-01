@@ -26,7 +26,7 @@ BLE_PROXY=true npm run server
 
 This exposes a `/ble` WebSocket endpoint (e.g. `ws://localhost:5580/ble`) that proxy clients connect to.
 
-> **Note:** `--ble-proxy` and `--bluetooth-adapter` are mutually exclusive.
+> **Note:** `--ble-proxy` can be combined with `--bluetooth-adapter`. Both then scan, and each device is connected through the side that discovered it, the local adapter when both did.
 
 ## Noble Example Client
 

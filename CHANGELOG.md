@@ -12,6 +12,7 @@ This page shows a detailed overview of the changes between versions without the 
 - Fix: The dashboard reconnects once on its own when the connection drops, and shows the "Connection lost" page only when that attempt fails (#1213)
 - Fix: ws-client: `connect()` and `startListening()` fail when the server closes the connection before it is ready, instead of never returning
 - Fix: Setting the fabric label to the value it already has, as Home Assistant does on every restart, no longer sends the label to every node again (#1226)
+- Feature: `--ble-proxy` and `--bluetooth-adapter` can be used together. Both scan for commissionable devices, and each device is connected through the side that discovered it, the local adapter when both did. Before, `--ble-proxy` silently disabled the local adapter
 
 ## 1.5.5 (2026-10-24)
 
