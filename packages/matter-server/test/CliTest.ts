@@ -13,8 +13,10 @@ import {
     parseBluetoothAdapterOption,
     parseCliArgs,
     parseCustomClusterPollIntervalOption,
+    parseFabricIdOption,
     parseListenAddressList,
     parseTcpPortOption,
+    parseVendorIdOption,
 } from "../src/cli.js";
 import { controllerOptionsFrom } from "../src/controller-options.js";
 
@@ -35,6 +37,8 @@ describe("cli", () => {
         "REVOCATION_SETS_DIR",
         "CERTIFICATES_DIR",
         "BLUETOOTH_ADAPTER",
+        "VENDOR_ID",
+        "FABRIC_ID",
     ];
     const savedEnv = new Map<string, string | undefined>();
 
@@ -140,6 +144,54 @@ describe("cli", () => {
         it("rejects a value that only starts with digits", () => {
             expect(() => parseTcpPortOption("8080abc")).to.throw(InvalidArgumentError);
             expect(() => parseTcpPortOption("1e4")).to.throw(InvalidArgumentError);
+        });
+    });
+
+    describe("--vendorid", () => {
+        it("defaults to the test vendor 0xFFF1", () => {
+            expect(parseCliArgs(argv()).vendorId).to.equal(0xfff1);
+        });
+
+        it("accepts decimal and 0x-prefixed hex", () => {
+            expect(parseVendorIdOption("65521")).to.equal(0xfff1);
+            expect(parseVendorIdOption("0xFFF1")).to.equal(0xfff1);
+            expect(parseVendorIdOption("0xfff1")).to.equal(0xfff1);
+        });
+
+        it("reads a hex value from the environment, as docs/docker.md shows it", () => {
+            process.env.VENDOR_ID = "0xfff1";
+            try {
+                expect(parseCliArgs(argv()).vendorId).to.equal(0xfff1);
+            } finally {
+                delete process.env.VENDOR_ID;
+            }
+        });
+
+        it("rejects reserved vendor IDs", () => {
+            expect(() => parseVendorIdOption("0")).to.throw(InvalidArgumentError);
+            expect(() => parseVendorIdOption("0xFFF5")).to.throw(InvalidArgumentError);
+        });
+
+        it("rejects a value that only starts with digits", () => {
+            expect(() => parseVendorIdOption("12abc")).to.throw(InvalidArgumentError);
+            expect(() => parseVendorIdOption("-5")).to.throw(InvalidArgumentError);
+        });
+    });
+
+    describe("--fabricid", () => {
+        it("defaults to 1", () => {
+            expect(parseCliArgs(argv()).fabricId).to.equal(1);
+        });
+
+        it("accepts decimal and 0x-prefixed hex", () => {
+            expect(parseFabricIdOption("2")).to.equal(2);
+            expect(parseFabricIdOption("0x10")).to.equal(16);
+        });
+
+        it("rejects 0, unsafe integers and trailing garbage", () => {
+            expect(() => parseFabricIdOption("0")).to.throw(InvalidArgumentError);
+            expect(() => parseFabricIdOption("9007199254740993")).to.throw(InvalidArgumentError);
+            expect(() => parseFabricIdOption("1x")).to.throw(InvalidArgumentError);
         });
     });
 

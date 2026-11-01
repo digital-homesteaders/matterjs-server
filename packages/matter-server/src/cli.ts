@@ -105,6 +105,28 @@ function parseIntOption(value: string): number {
     return parsed;
 }
 
+/** Parses a decimal or `0x` hexadecimal integer in `[min, max]`; anything else, such as `12abc`, is rejected. */
+function parseIdOption(value: string, min: number, max: number, name: string): number {
+    const trimmed = value.trim();
+    const parsed = /^(\d+|0x[0-9a-f]+)$/i.test(trimmed) ? Number(trimmed) : NaN;
+    if (!Number.isSafeInteger(parsed) || parsed < min || parsed > max) {
+        throw new InvalidArgumentError(
+            `${name} must be a decimal or 0x-prefixed hex integer between ${min} and 0x${max.toString(16).toUpperCase()}, got: ${value}`,
+        );
+    }
+    return parsed;
+}
+
+/** 0x0000 and values above 0xFFF4 are reserved; devices refuse them in AddNOC. */
+export function parseVendorIdOption(value: string): number {
+    return parseIdOption(value, 1, 0xfff4, "Vendor ID");
+}
+
+/** Fabric ID 0 is invalid per the Matter spec. */
+export function parseFabricIdOption(value: string): number {
+    return parseIdOption(value, 1, Number.MAX_SAFE_INTEGER, "Fabric ID");
+}
+
 function parsePositiveIntOption(value: string): number {
     const parsed = parseIntOption(value);
     if (parsed < 1) {
@@ -211,14 +233,14 @@ export function parseCliArgs(argv?: string[]): CliOptions {
 
     program
         .addOption(
-            new Option("--vendorid <id>", "Vendor ID for the Fabric")
-                .argParser(parseIntOption)
+            new Option("--vendorid <id>", "Vendor ID for the Fabric (decimal or 0x hex)")
+                .argParser(parseVendorIdOption)
                 .default(DEFAULT_VENDOR_ID)
                 .env("VENDOR_ID"),
         )
         .addOption(
             new Option("--fabricid <id>", "Fabric ID for the Fabric (random if not specified)")
-                .argParser(parseIntOption)
+                .argParser(parseFabricIdOption)
                 .default(DEFAULT_FABRIC_ID)
                 .env("FABRIC_ID"),
         )
